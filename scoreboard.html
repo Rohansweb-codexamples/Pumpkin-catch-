@@ -36,6 +36,7 @@ button{border:0;border-radius:12px;background:linear-gradient(#ff9a2f,#e45c16);c
 <script>
 (()=> {
  const API_BASE='https://pumpkin-catch.onrender.com';
+ const displayName=value=>{const n=String(value||'Player').trim();if(['oham','oh am'].includes(n.toLowerCase()))return 'Rohan';if(n.toLowerCase()==='name')return 'Callum';return n};
  const list=document.getElementById('scores'),status=document.getElementById('status'),refresh=document.getElementById('refresh');
  async function loadScores(){
    refresh.disabled=true;status.textContent='Loading scores…';
@@ -47,7 +48,7 @@ button{border:0;border-radius:12px;background:linear-gradient(#ff9a2f,#e45c16);c
      if(!entries.length){const li=document.createElement('li');li.textContent='No scores yet. Play a game to be the first on the leaderboard.';list.append(li)}
      else entries.slice(0,10).forEach(entry=>{
        const li=document.createElement('li'),name=document.createElement('span'),points=document.createElement('span');
-       name.className='player';name.textContent=entry.name||'Player';
+       name.className='player';name.textContent=displayName(entry.name);
        points.className='points';points.textContent=Math.floor(Number(entry.score)||0)+' points';
        li.append(name,points);list.append(li);
      });
