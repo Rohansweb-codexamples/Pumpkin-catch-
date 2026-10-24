@@ -4,8 +4,10 @@ const path = require("path");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-// On Render, attach a persistent disk mounted at /var/data and set DATA_DIR=/var/data.
-const DATA_DIR = process.env.DATA_DIR || (process.env.RENDER ? "/var/data" : path.join(__dirname, "data"));
+// Use a writable local directory by default. For persistent scores on Render,
+// attach a disk and explicitly set DATA_DIR to its mount path (for example /var/data).
+// Do not assume /var/data exists: without a mounted disk, that can break every score request.
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "leaderboard.json");
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 
@@ -69,13 +71,20 @@ app.get("/health", (_req, res) => {
 });
 
 app.get("/api/leaderboard", (_req, res) => {
-  const scores = readScores()
-    .sort((a, b) => b.score - a.score || new Date(a.createdAt) - new Date(b.createdAt))
-    .slice(0, 10);
-  res.json({ leaderboard: scores });
+  try {
+    const scores = readScores()
+      .sort((a, b) => b.score - a.score || new Date(a.createdAt) - new Date(b.createdAt))
+      .slice(0, 10);
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ leaderboard: scores });
+  } catch (error) {
+    console.error("Could not read leaderboard storage:", error);
+    res.status(500).json({ error: "Leaderboard storage is unavailable. Check DATA_DIR and Render disk settings." });
+  }
 });
 
 app.post("/api/leaderboard", (req, res) => {
+  try {
   const name = cleanName(req.body && req.body.name);
   const score = Number(req.body && req.body.score);
 
@@ -96,6 +105,10 @@ app.post("/api/leaderboard", (req, res) => {
   writeScores(scores.slice(0, 1000));
 
   res.status(201).json({ ok: true, entry, leaderboard: scores.slice(0, 10) });
+  } catch (error) {
+    console.error("Could not save leaderboard score:", error);
+    res.status(500).json({ error: "Could not save score. Check DATA_DIR and Render disk settings." });
+  }
 });
 
 app.listen(PORT, "0.0.0.0", () => {
