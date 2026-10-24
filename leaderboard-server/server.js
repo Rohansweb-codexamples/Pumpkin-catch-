@@ -4,7 +4,8 @@ const path = require("path");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
+// On Render, attach a persistent disk mounted at /var/data and set DATA_DIR=/var/data.
+const DATA_DIR = process.env.DATA_DIR || (process.env.RENDER ? "/var/data" : path.join(__dirname, "data"));
 const DATA_FILE = path.join(DATA_DIR, "leaderboard.json");
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
 
@@ -36,7 +37,9 @@ function readScores() {
 
 function writeScores(scores) {
   ensureStore();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(scores, null, 2), "utf8");
+  const tempFile = DATA_FILE + ".tmp";
+  fs.writeFileSync(tempFile, JSON.stringify(scores, null, 2), "utf8");
+  fs.renameSync(tempFile, DATA_FILE);
 }
 
 function cleanName(value) {
