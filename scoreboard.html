@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e87516">
+<title>Pumpkin Catch — Leaderboard</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif;color:#442313}
+body{min-height:100vh;padding:24px 14px;background:#211b27 url("https://raw.githubusercontent.com/Rohansweb-codexamples/Pumpkin-catch-/main/Autumn%20Sunset%20Farmyard-2.png") center/cover fixed no-repeat;display:flex;align-items:center;justify-content:center}
+main{width:min(650px,100%);background:#fff0d9ed;border:4px solid #70391d;border-radius:28px;padding:clamp(20px,5vw,38px);box-shadow:0 12px 0 #71391f,0 24px 60px #58280b55}
+.brand{font-weight:1000;letter-spacing:-1.5px;font-size:clamp(22px,4vw,32px);line-height:1;color:#442313}.brand span{color:#a63e16}
+h1{font-size:clamp(34px,8vw,52px);letter-spacing:-2px;line-height:1;margin:18px 0 10px;color:#b64c17}
+.intro{color:#744122;font-weight:650;margin:0 0 20px;line-height:1.5}
+.scorebox{background:#fff8e9;border:2px solid #d9a36e;border-radius:16px;padding:14px}
+.scorehead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;color:#9d4318;font-weight:900}
+ol{margin:0;padding:0;list-style:none;counter-reset:rank}li{counter-increment:rank;display:flex;align-items:center;gap:12px;padding:12px 8px;border-bottom:1px solid #edd1ad;font-weight:750;min-height:48px}li:last-child{border-bottom:0}li:before{content:counter(rank);display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:50%;background:#f7d39c;color:#773518;font-weight:1000}.player{flex:1;overflow-wrap:anywhere}.points{white-space:nowrap;color:#a94314;font-weight:1000}
+.status{font-size:13px;color:#744122;margin:0 0 8px}
+button{border:0;border-radius:12px;background:linear-gradient(#ff9a2f,#e45c16);color:#fffaf0;font:900 15px system-ui;padding:11px 16px;box-shadow:0 4px 0 #9b3b13;cursor:pointer}button:active{transform:translateY(2px);box-shadow:0 2px 0 #9b3b13}
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}.back{display:inline-block;border-radius:12px;background:#71391f;color:#fff7e6;text-decoration:none;font-weight:900;padding:11px 16px}
+@media(max-width:420px){.scorehead{align-items:flex-start}li{gap:8px;padding:10px 3px}}
+</style>
+</head>
+<body>
+<main>
+<div class="brand">PUMPKIN <span>CATCH</span></div>
+<h1>LEADERBOARD</h1>
+<p class="intro">See the best pumpkin-catching scores. You can visit this page any time — you do not need to start a game.</p>
+<section class="scorebox" aria-label="Top scores">
+<div class="scorehead"><span>TOP 10 PLAYERS</span><button id="refresh" type="button">REFRESH SCORES</button></div>
+<p id="status" class="status" aria-live="polite">Loading scores…</p>
+<ol id="scores"><li>Loading…</li></ol>
+</section>
+<div class="actions"><a class="back" href="/">BACK TO GAME</a></div>
+</main>
+<script>
+(()=> {
+ const API_BASE='https://pumpkin-catch.onrender.com';
+ const list=document.getElementById('scores'),status=document.getElementById('status'),refresh=document.getElementById('refresh');
+ async function loadScores(){
+   refresh.disabled=true;status.textContent='Loading scores…';
+   try{
+     const response=await fetch(API_BASE+'/api/leaderboard',{cache:'no-store'});
+     if(!response.ok)throw new Error('Server returned an error');
+     const data=await response.json(),entries=Array.isArray(data.leaderboard)?data.leaderboard:[];
+     list.replaceChildren();
+     if(!entries.length){const li=document.createElement('li');li.textContent='No scores yet. Play a game to be the first on the leaderboard.';list.append(li)}
+     else entries.slice(0,10).forEach(entry=>{
+       const li=document.createElement('li'),name=document.createElement('span'),points=document.createElement('span');
+       name.className='player';name.textContent=entry.name||'Player';
+       points.className='points';points.textContent=Math.floor(Number(entry.score)||0)+' points';
+       li.append(name,points);list.append(li);
+     });
+     status.textContent='Showing '+entries.length+' top score'+(entries.length===1?'':'s')+'.';
+   }catch(error){list.replaceChildren();status.textContent='Could not load scores. Please check that the leaderboard server is running, then refresh.'}
+   finally{refresh.disabled=false}
+ }
+ refresh.addEventListener('click',loadScores);
+ loadScores();
+})();
+</script>
+</body>
+</html>
