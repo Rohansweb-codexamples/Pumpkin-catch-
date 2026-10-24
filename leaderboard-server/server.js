@@ -51,7 +51,9 @@ function cleanName(value) {
 }
 
 app.get("/", (_req, res) => {
-  res.type("text").send("Pumpkin Catch leaderboard API is running. Use /health or /api/leaderboard.");
+  // Serve the game from the repository root so the Render service can host
+  // both the game page and its leaderboard API from the same origin.
+  res.sendFile(path.join(__dirname, "..", "index.html"));
 });
 
 app.get("/health", (_req, res) => {
