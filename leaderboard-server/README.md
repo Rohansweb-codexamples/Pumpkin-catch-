@@ -1,41 +1,34 @@
-# Pumpkin Catch leaderboard server
+# Pumpkin Catch game + leaderboard server
 
-This folder contains a small Node.js API for the Pumpkin Catch game.
+This folder contains the Node.js server for the Pumpkin Catch game and its shared leaderboard.
 
 ## Endpoints
 
+- `GET /` — serves the repository's root `index.html` game
 - `GET /health` — health check
 - `GET /api/leaderboard` — returns the top 10 scores
 - `POST /api/leaderboard` — submits a score
 
-Example request body:
-
-```json
-{
-  "name": "Rohan",
-  "score": 120
-}
-```
-
-## Run locally
-
-1. Install Node.js 20 or newer.
-2. Open a terminal in this folder.
-3. Run `npm install`.
-4. Run `npm start`.
-5. Open `http://localhost:3000/health`.
+The game calculates the score itself from pumpkins caught and submits that score automatically when the two-minute round ends. Players only choose a display name; there is no manual score-entry field.
 
 ## Deploy on Render
 
-1. Create a new **Web Service** from the repository `Rohansweb-codexamples/Pumpkin-catch-`.
+1. Open the existing Render service for `https://pumpkin-catch.onrender.com/` (or create a Web Service connected to this repository).
 2. Set **Root Directory** to `leaderboard-server`.
 3. Set **Build Command** to `npm install`.
 4. Set **Start Command** to `npm start`.
-5. Add a persistent disk mounted at `/var/data` so scores survive redeploys.
-6. Add environment variable `DATA_DIR` = `/var/data`.
-7. Optionally set `ALLOWED_ORIGIN` to your published game website origin. During initial testing, it defaults to `*`.
-8. Deploy, then test `https://YOUR-SERVICE.onrender.com/health` and `https://YOUR-SERVICE.onrender.com/api/leaderboard`.
+5. In Render, add a **persistent disk** to this web service and set its mount path to `/var/data`.
+6. Add environment variable `DATA_DIR` with value `/var/data`.
+7. Deploy the latest commit from `main`.
+
+After deployment, check `https://pumpkin-catch.onrender.com/health` and `https://pumpkin-catch.onrender.com/api/leaderboard`.
+
+## Score persistence
+
+Scores are written to `DATA_DIR/leaderboard.json`. On Render, the disk mounted at `/var/data` keeps this file across deploys and restarts. **Without a persistent disk, Render's ordinary service filesystem is ephemeral and scores can be lost on restart/redeploy.** The server cannot attach the disk through code; it must be added in the Render Dashboard.
+
+If scores already exist in a previous deployment's temporary filesystem, they must be copied to the persistent disk before that old filesystem is discarded. This code does not intentionally clear saved scores.
 
 ## Important
 
-The game page must send scores to this API to display and submit scores. The API files alone do not automatically connect the game to the leaderboard. This basic version validates input but cannot prevent players from submitting fabricated scores; use server-side game verification if anti-cheat protection is needed.
+This basic API validates score format, but it cannot fully prevent fabricated score submissions from a modified client. Production anti-cheat requires server-side game verification.
