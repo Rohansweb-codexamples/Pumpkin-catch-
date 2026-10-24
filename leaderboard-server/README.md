@@ -5,6 +5,7 @@ This folder contains the Node.js server for the Pumpkin Catch game and its share
 ## Endpoints
 
 - `GET /` — serves the repository's root `index.html` game
+- `GET /scoreboard` and `GET /scoreboard.html` — serve the standalone leaderboard page
 - `GET /health` — health check
 - `GET /api/leaderboard` — returns the top 10 scores
 - `POST /api/leaderboard` — submits a score
