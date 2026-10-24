@@ -1,0 +1,90 @@
+const express = require("express");
+const fs = require("fs");
+const path = require("path");
+
+const app = express();
+const PORT = Number(process.env.PORT) || 3000;
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, "data");
+const DATA_FILE = path.join(DATA_DIR, "leaderboard.json");
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "*";
+
+app.use((req, res, next) => {
+  res.setHeader("Access-Control-Allow-Origin", ALLOWED_ORIGIN);
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.sendStatus(204);
+  next();
+});
+app.use(express.json({ limit: "10kb" }));
+
+function ensureStore() {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  if (!fs.existsSync(DATA_FILE)) {
+    fs.writeFileSync(DATA_FILE, "[]", "utf8");
+  }
+}
+
+function readScores() {
+  ensureStore();
+  try {
+    const parsed = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeScores(scores) {
+  ensureStore();
+  fs.writeFileSync(DATA_FILE, JSON.stringify(scores, null, 2), "utf8");
+}
+
+function cleanName(value) {
+  return String(value || "")
+    .replace(/[<>\u0000-\u001f]/g, "")
+    .trim()
+    .replace(/\s+/g, " ")
+    .slice(0, 18);
+}
+
+app.get("/", (_req, res) => {
+  res.type("text").send("Pumpkin Catch leaderboard API is running. Use /health or /api/leaderboard.");
+});
+
+app.get("/health", (_req, res) => {
+  res.json({ ok: true, service: "pumpkin-catch-leaderboard" });
+});
+
+app.get("/api/leaderboard", (_req, res) => {
+  const scores = readScores()
+    .sort((a, b) => b.score - a.score || new Date(a.createdAt) - new Date(b.createdAt))
+    .slice(0, 10);
+  res.json({ leaderboard: scores });
+});
+
+app.post("/api/leaderboard", (req, res) => {
+  const name = cleanName(req.body && req.body.name);
+  const score = Number(req.body && req.body.score);
+
+  if (!name) return res.status(400).json({ error: "Enter a player name." });
+  if (!Number.isSafeInteger(score) || score < 0 || score > 1000000) {
+    return res.status(400).json({ error: "Score must be a whole number between 0 and 1000000." });
+  }
+
+  const scores = readScores();
+  const entry = {
+    id: require("crypto").randomUUID(),
+    name,
+    score,
+    createdAt: new Date().toISOString()
+  };
+  scores.push(entry);
+  scores.sort((a, b) => b.score - a.score || new Date(a.createdAt) - new Date(b.createdAt));
+  writeScores(scores.slice(0, 1000));
+
+  res.status(201).json({ ok: true, entry, leaderboard: scores.slice(0, 10) });
+});
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`Pumpkin Catch leaderboard API listening on port ${PORT}`);
+});
