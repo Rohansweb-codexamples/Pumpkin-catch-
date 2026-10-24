@@ -31,9 +31,28 @@ function readScores() {
   ensureStore();
   try {
     const parsed = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+    if (!Array.isArray(parsed)) return [];
+
+    // Correct the two earlier placeholder/typo names shown on the live board.
+    // Persist the corrections so they remain fixed after later requests/restarts.
+    let changed = false;
+    const corrected = parsed.map((entry) => {
+      if (!entry || typeof entry.name !== "string") return entry;
+      const oldName = entry.name.trim().toLowerCase();
+      let name = entry.name;
+      if (oldName === "oham" || oldName === "oh am") name = "Rohan";
+      if (oldName === "name") name = "Callum";
+      if (name !== entry.name) {
+        changed = true;
+        return { ...entry, name };
+      }
+      return entry;
+    });
+    if (changed) writeScores(corrected);
+    return corrected;
+  } catch (error) {
+    console.error("Could not read leaderboard file:", error);
+    throw error;
   }
 }
 
