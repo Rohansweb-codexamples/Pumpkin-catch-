@@ -56,7 +56,15 @@ app.get("/", (_req, res) => {
   res.sendFile(path.join(__dirname, "..", "index.html"));
 });
 
-app.get("/scoreboard", (_req, res) => {\n  res.sendFile(path.join(__dirname, "..", "scoreboard.html"));\n});\n\napp.get("/scoreboard.html", (_req, res) => {\n  res.sendFile(path.join(__dirname, "..", "scoreboard.html"));\n});\n\napp.get("/health", (_req, res) => {
+app.get("/scoreboard", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "scoreboard.html"));
+});
+
+app.get("/scoreboard.html", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "scoreboard.html"));
+});
+
+app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "pumpkin-catch-leaderboard" });
 });
 
